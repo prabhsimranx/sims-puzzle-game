@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Sim's Puzzle Game ✨</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --cream:    #fdf4ee;
+  --rose:     #f7b8d0;
+  --rose-deep:#e8789e;
+  --lavender: #d4c1f5;
+  --mint:     #b8e8d0;
+  --sky:      #bcd8f7;
+  --peach:    #fad4b8;
+  --text:     #6b5272;
+  --text-soft:#b09cbf;
+  --border:   rgba(200,175,220,0.28);
+  --shadow:   rgba(160,110,180,0.12);
+}
+
+body {
+  background: var(--cream);
+  background-image:
+    radial-gradient(ellipse at 15% 10%, rgba(247,184,208,0.25) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 90%, rgba(188,216,247,0.25) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(212,193,245,0.12) 0%, transparent 70%);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  gap: 16px;
+  font-family: 'Nunito', sans-serif;
+  color: var(--text);
+}
+
+/* ── HEADER ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 660px;
+}
+
+.title {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.title-main {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  line-height: 1;
+}
+.title-sub {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: 99px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--rose-deep);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+.badge-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--rose-deep);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50%      { opacity:.4; transform:scale(.65); }
+}
+
+/* ── CANVAS WRAPPER ── */
+#wrap {
+  position: relative;
+  width: 100%;
+  max-width: 660px;
+  aspect-ratio: 4/3;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 2px rgba(247,184,208,0.4),
+    0 8px 32px rgba(160,110,180,0.18),
+    0 24px 64px rgba(160,110,180,0.10);
+  background: #f5eaf5;
+}
+#canvas { width: 100%; height: 100%; display: block; }
+
+#overlay {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px;
+  background: rgba(253,244,238,0.92);
+  font-size: 14px; letter-spacing: 0.04em;
+  text-align: center; padding: 24px;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+  font-weight: 600; color: var(--text);
+}
+#overlay.gone { opacity: 0; pointer-events: none; }
+#overlay .icon { font-size: 40px; }
+
+/* ── CONTROLS ── */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 660px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 99px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+  letter-spacing: 0.02em;
+  box-shadow: 0 3px 10px var(--shadow);
+}
+.btn:hover  { transform: translateY(-1px); box-shadow: 0 5px 16px var(--shadow); }
+.btn:active { transform: translateY(0px);  box-shadow: 0 2px 6px var(--shadow); }
+
+.btn-shuffle {
+  background: linear-gradient(135deg, var(--rose) 0%, var(--lavender) 100%);
+  color: white;
+  text-shadow: 0 1px 3px rgba(120,80,140,0.3);
+}
+.btn-reset {
+  background: white;
+  color: var(--text);
+  border: 1.5px solid var(--border);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+select {
+  padding: 10px 16px;
+  background: white;
+  color: var(--text);
+  border: 1.5px solid var(--border);
+  border-radius: 99px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  box-shadow: 0 2px 8px var(--shadow);
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23b09cbf' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+/* ── STATS ── */
+.stats {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  max-width: 660px;
+  flex-wrap: wrap;
+}
+.chip {
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: 99px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-soft);
+  box-shadow: 0 2px 6px var(--shadow);
+}
+.chip b { color: var(--text); }
+
+/* ── HINT ── */
+.hint {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-soft);
+  text-align: center;
+  max-width: 660px;
+  letter-spacing: 0.02em;
+}
+
+video { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="title">
+    <span class="title-main">✨ Sim's Puzzle Game</span>
+    <span class="title-sub">Hand gesture controlled</span>
+  </div>
+  <div class="badge" id="mode-badge">
+    <span class="badge-dot"></span>
+    <span id="badge-text">Live</span>
+  </div>
+</div>
+
+<div id="wrap">
+  <canvas id="canvas"></canvas>
+  <div id="overlay">
+    <span class="icon">📷</span>
+    <span id="overlay-msg">Starting camera…</span>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn btn-shuffle" onclick="shufflePuzzle()">✦ Shuffle</button>
+  <select id="gridSel" onchange="changeGrid()">
+    <option value="2" selected>2 × 2</option>
+    <option value="3">3 × 3</option>
+    <option value="4">4 × 4</option>
+    <option value="5">5 × 5</option>
+  </select>
+  <button class="btn btn-reset" onclick="resetPuzzle()">↩ Reset</button>
+</div>
+
+<div class="stats">
+  <div class="chip">Grid <b id="s-grid">—</b></div>
+  <div class="chip">Placed <b id="s-placed">—</b></div>
+  <div class="chip">Left <b id="s-rem">—</b></div>
+</div>
+
+<div class="hint">✌️ Hold peace sign to capture &nbsp;·&nbsp; 🤌 Pinch to grab pieces</div>
+
+<video id="video" playsinline autoplay muted></video>
+<script defer src="/_vercel/insights/script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js" crossorigin="anonymous"></script>
+
+<script>
+/* ─── DOM ─── */
+const video      = document.getElementById('video');
+const canvas     = document.getElementById('canvas');
+const ctx        = canvas.getContext('2d');
+const overlay    = document.getElementById('overlay');
+const overlayMsg = document.getElementById('overlay-msg');
+const badgeText  = document.getElementById('badge-text');
+
+const W = 640, H = 480;
+canvas.width = W; canvas.height = H;
+
+/* ─── OFFSCREEN CANVASES ─── */
+const mirrorCanvas = document.createElement('canvas');
+mirrorCanvas.width = W; mirrorCanvas.height = H;
+const mirrorCtx = mirrorCanvas.getContext('2d');
+
+const frozenCanvas = document.createElement('canvas');
+frozenCanvas.width = W; frozenCanvas.height = H;
+const frozenCtx = frozenCanvas.getContext('2d');
+
+const lx = x => (1 - x) * W;
+const ly = y => y * H;
+
+function buildMirrorFrame() {
+  mirrorCtx.save();
+  mirrorCtx.translate(W, 0); mirrorCtx.scale(-1, 1);
+  mirrorCtx.drawImage(video, 0, 0, W, H);
+  mirrorCtx.restore();
+}
+
+/* ─── PASTEL PALETTE (used inside canvas) ─── */
+const P = {
+  rose:     '#f7b8d0',
+  roseDark: '#e8789e',
+  lavender: '#d4c1f5',
+  mint:     '#b8e8d0',
+  sky:      '#bcd8f7',
+  peach:    '#fad4b8',
+  cream:    '#fdf4ee',
+  text:     '#6b5272',
+  textSoft: '#b09cbf',
+  white:    'rgba(255,255,255,0.95)',
+  glass:    'rgba(255,255,255,0.75)',
+  glassDim: 'rgba(255,255,255,0.55)',
+};
+
+/* ─── CONFETTI ─── */
+const CONFETTI_COLORS = ['#f9a8d4','#93c5fd','#86efac','#fde68a','#c4b5fd','#fed7aa','#f0abfc','#99f6e4'];
+
+class Confetto {
+  constructor(fromX) {
+    this.x  = fromX !== undefined ? fromX : Math.random() * W;
+    this.y  = -16;
+    this.vx = (Math.random() - 0.5) * 5;
+    this.vy = 1.5 + Math.random() * 4;
+    this.rot  = Math.random() * Math.PI * 2;
+    this.rotV = (Math.random() - 0.5) * 0.25;
+    this.color = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+    this.w = 7 + Math.random() * 9;
+    this.h = 4 + Math.random() * 5;
+    this.life  = 1;
+    this.decay = 0.004 + Math.random() * 0.004;
+    this.shape = Math.random() < 0.3 ? 'circle' : 'rect';
+  }
+  update() {
+    this.x   += this.vx;
+    this.vx  += (Math.random() - 0.5) * 0.15;
+    this.y   += this.vy;
+    this.vy  += 0.07;
+    this.rot += this.rotV;
+    this.life -= this.decay;
+    return this.life > 0 && this.y < H + 24;
+  }
+  draw() {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rot);
+    ctx.globalAlpha = Math.min(1, this.life * 2);
+    ctx.fillStyle = this.color;
+    if (this.shape === 'circle') {
+      ctx.beginPath();
+      ctx.arc(0, 0, this.w * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
+    }
+    ctx.restore();
+  }
+}
+
+let confetti      = [];
+let confettiOn    = false;
+let confettiTimer = 0;
+let spawnClock    = 0;
+
+function startConfetti() {
+  confetti   = [];
+  confettiOn = true;
+  confettiTimer = 220; // ~220 frames of spawning
+}
+
+function tickConfetti() {
+  if (confettiOn && confettiTimer > 0) {
+    confettiTimer--;
+    spawnClock++;
+    if (spawnClock % 2 === 0) {           // spawn every 2 frames
+      const burst = 3 + Math.floor(Math.random() * 4);
+      for (let i = 0; i < burst; i++) confetti.push(new Confetto());
+    }
+    if (confettiTimer <= 0) confettiOn = false;
+  }
+  confetti = confetti.filter(c => { const alive = c.update(); c.draw(); return alive; });
+}
+
+/* ─── STATE MACHINE: viewfinder → preview → puzzle ─── */
+let STATE = 'viewfinder';
+let COLS = 2, ROWS = 2;
+let pieces = [], grabbed = null, grabOff = { x: 0, y: 0 };
+let isPinching = false, pinchPt = null, lms = null;
+let solved = 0, won = false, ready = false;
+let captureHoldStart = null, captureProgress = 0, captureFlash = 0;
+const CAPTURE_HOLD_MS = 1500;
+
+/* ─── HELPERS ─── */
+const pw    = () => W / COLS;
+const ph    = () => H / ROWS;
+const homeX = p => p.col * pw();
+const homeY = p => p.row * ph();
+
+function updateStats() {
+  const total = COLS * ROWS;
+  document.getElementById('s-grid').textContent   = `${COLS}×${ROWS}`;
+  document.getElementById('s-placed').textContent = solved;
+  document.getElementById('s-rem').textContent    = total - solved;
+}
+
+/* ─── GESTURE ─── */
+function isPeaceSign(lms) {
+  return lms[8].y  < lms[5].y
+      && lms[12].y < lms[9].y
+      && lms[16].y > lms[13].y
+      && lms[20].y > lms[17].y;
+}
+
+/* ─── TRANSITIONS ─── */
+function takeSnapshot() {
+  frozenCtx.drawImage(mirrorCanvas, 0, 0);
+  captureProgress = 0; captureHoldStart = null; captureFlash = 1;
+  STATE = 'preview';
+  badgeText.textContent = 'Photo';
+  setTimeout(startPuzzle, 2000);
+}
+
+function startPuzzle() {
+  STATE = 'puzzle';
+  initPieces(); _shuffle();
+}
+
+function resetToViewfinder() {
+  STATE = 'viewfinder';
+  pieces = []; grabbed = null; solved = 0; won = false;
+  isPinching = false; pinchPt = null;
+  captureProgress = 0; captureHoldStart = null;
+  confetti = []; confettiOn = false;
+  badgeText.textContent = 'Live';
+  updateStats();
+}
+
+/* ─── PUZZLE ─── */
+function initPieces() {
+  pieces = []; solved = 0; won = false; grabbed = null;
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      pieces.push({ col: c, row: r, x: c * pw(), y: r * ph(), placed: true, z: r * COLS + c });
+  updateStats();
+}
+
+function _shuffle() {
+  const _pw = pw(), _ph = ph(), pad = 10;
+  pieces.forEach(p => {
+    p.placed = false;
+    p.x = pad + Math.random() * (W - _pw - pad * 2);
+    p.y = pad + Math.random() * (H - _ph - pad * 2);
+    p.z = Math.random() * 1000;
+  });
+  solved = 0; won = false;
+  confetti = []; confettiOn = false;
+  updateStats();
+}
+
+function trySnap(p) {
+  if (Math.hypot(p.x - homeX(p), p.y - homeY(p)) < Math.min(pw(), ph()) * 0.28) {
+    p.x = homeX(p); p.y = homeY(p);
+    if (!p.placed) {
+      p.placed = true; solved++;
+      updateStats();
+      if (solved === COLS * ROWS && !won) {
+        won = true;
+        startConfetti();
+      }
+    }
+  }
+}
+
+function shufflePuzzle() { if (STATE === 'puzzle') _shuffle(); }
+function resetPuzzle()   { resetToViewfinder(); }
+function changeGrid() {
+  COLS = ROWS = parseInt(document.getElementById('gridSel').value);
+  if (STATE === 'puzzle') { initPieces(); _shuffle(); }
+}
+
+/* ─── CANVAS DRAWING ─── */
+
+// Rounded rect helper
+function rr(x, y, w, h, r) {
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, r); 
+}
+
+function drawPiece(p, isGrabbed) {
+  const _pw = pw(), _ph = ph();
+  ctx.save();
+
+  if (isGrabbed) {
+    // lift shadow
+    ctx.shadowColor = 'rgba(160,110,180,0.35)';
+    ctx.shadowBlur  = 22;
+    ctx.shadowOffsetY = 6;
+  }
+
+  // clip & draw image
+  ctx.beginPath(); ctx.roundRect(p.x, p.y, _pw, _ph, 6); ctx.clip();
+  ctx.drawImage(frozenCanvas, homeX(p), homeY(p), _pw, _ph, p.x, p.y, _pw, _ph);
+
+  // border
+  ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+  if      (p.placed)  { ctx.strokeStyle = P.mint;     ctx.lineWidth = 3; }
+  else if (isGrabbed) { ctx.strokeStyle = P.rose;     ctx.lineWidth = 3; }
+  else                { ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 2; }
+  ctx.beginPath(); ctx.roundRect(p.x + 1, p.y + 1, _pw - 2, _ph - 2, 5);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawHand() {
+  if (!lms) return;
+
+  const CONNS = [
+    [0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],
+    [0,9],[9,10],[10,11],[11,12],[0,13],[13,14],[14,15],[15,16],
+    [0,17],[17,18],[18,19],[19,20],[5,9],[9,13],[13,17]
+  ];
+
+  ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+  CONNS.forEach(([a,b]) => {
+    ctx.beginPath();
+    ctx.moveTo(lx(lms[a].x), ly(lms[a].y));
+    ctx.lineTo(lx(lms[b].x), ly(lms[b].y));
+    ctx.stroke();
+  });
+
+  lms.forEach((l, i) => {
+    if (i === 4 || i === 8) return;
+    ctx.beginPath(); ctx.arc(lx(l.x), ly(l.y), 3.5, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.fill();
+  });
+
+  const tx = lx(lms[4].x), ty = ly(lms[4].y);
+  const ix = lx(lms[8].x), iy = ly(lms[8].y);
+
+  ctx.setLineDash([5,5]); ctx.beginPath(); ctx.moveTo(tx,ty); ctx.lineTo(ix,iy);
+  ctx.strokeStyle = isPinching ? P.rose : 'rgba(255,255,255,0.3)';
+  ctx.lineWidth = 2; ctx.stroke(); ctx.setLineDash([]);
+
+  [[tx,ty,P.rose],[ix,iy,P.sky]].forEach(([x,y,c]) => {
+    ctx.beginPath(); ctx.arc(x,y,9,0,Math.PI*2);
+    ctx.fillStyle = c; ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.9)'; ctx.lineWidth=2; ctx.stroke();
+  });
+
+  if (pinchPt && STATE === 'puzzle') {
+    ctx.beginPath(); ctx.arc(pinchPt.x, pinchPt.y, isPinching?16:10, 0, Math.PI*2);
+    ctx.fillStyle   = isPinching ? 'rgba(247,184,208,0.25)' : 'rgba(255,255,255,0.08)';
+    ctx.strokeStyle = isPinching ? P.rose : 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 2; ctx.fill(); ctx.stroke();
+  }
+
+  // Capture ring (viewfinder only)
+  if (captureProgress > 0) {
+    const cx = (lx(lms[8].x) + lx(lms[12].x)) / 2;
+    const cy = (ly(lms[8].y) + ly(lms[12].y)) / 2 - 44;
+    const R  = 30;
+
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=6; ctx.stroke();
+
+    ctx.beginPath(); ctx.arc(cx,cy,R,-Math.PI/2,-Math.PI/2+captureProgress*Math.PI*2);
+    ctx.strokeStyle = captureProgress>0.85 ? P.mint : P.rose;
+    ctx.lineWidth=6; ctx.stroke();
+
+    ctx.font=`${R}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('📷',cx,cy);
+  }
+}
+
+// Frosted pill label
+function pill(text, x, y, opts = {}) {
+  const { align='center', bg=P.glass, col=P.text, fs=13, fw=700, px=20, py=10, r=99 } = opts;
+  ctx.save();
+  ctx.font = `${fw} ${fs}px Nunito, sans-serif`;
+  const tw = ctx.measureText(text).width;
+  const bw = tw + px * 2, bh = py * 2 + fs;
+  let bx = align === 'center' ? x - bw/2 : x;
+  let by = y - bh/2;
+  ctx.fillStyle = bg;
+  ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, r); ctx.fill();
+  ctx.fillStyle = col;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, bx + bw/2, y);
+  ctx.restore();
+}
+
+/* ─── MAIN RENDER ─── */
+function render() {
+  buildMirrorFrame();
+  ctx.clearRect(0, 0, W, H);
+
+  /* ══ VIEWFINDER ══ */
+  if (STATE === 'viewfinder') {
+    ctx.drawImage(mirrorCanvas, 0, 0, W, H);
+    drawHand();
+
+    // bottom gradient
+    const grad = ctx.createLinearGradient(0, H*0.45, 0, H);
+    grad.addColorStop(0,'rgba(0,0,0,0)'); grad.addColorStop(1,'rgba(0,0,0,0.65)');
+    ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+
+    // prompt pill
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.beginPath(); ctx.roundRect(W/2-155, H-70, 310, 52, 99); ctx.fill();
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font='bold 16px Nunito, sans-serif'; ctx.fillStyle='#fff';
+    ctx.fillText('✌️  Hold peace sign to capture', W/2, H-52);
+    ctx.font='12px Nunito, sans-serif'; ctx.fillStyle='rgba(255,255,255,0.6)';
+    ctx.fillText('Hold still for 1.5 seconds', W/2, H-32);
+    ctx.restore();
+    return;
+  }
+
+  /* ══ PREVIEW ══ */
+  if (STATE === 'preview') {
+    ctx.drawImage(frozenCanvas, 0, 0, W, H);
+
+    // soft vignette
+    const vig = ctx.createRadialGradient(W/2,H/2,H*0.18,W/2,H/2,H*0.82);
+    vig.addColorStop(0,'rgba(0,0,0,0)'); vig.addColorStop(1,'rgba(0,0,0,0.5)');
+    ctx.fillStyle=vig; ctx.fillRect(0,0,W,H);
+
+    // card
+    ctx.save();
+    ctx.fillStyle='rgba(255,255,255,0.82)';
+    ctx.beginPath(); ctx.roundRect(W/2-158,H/2-40,316,80,16); ctx.fill();
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font='bold 20px Nunito, sans-serif'; ctx.fillStyle=P.text;
+    ctx.fillText('📸  Photo captured!', W/2, H/2-10);
+    ctx.font='13px Nunito, sans-serif'; ctx.fillStyle=P.textSoft;
+    ctx.fillText('Turning into puzzle…', W/2, H/2+16);
+    ctx.restore();
+
+    if (captureFlash > 0) {
+      ctx.fillStyle=`rgba(255,255,255,${captureFlash.toFixed(2)})`;
+      ctx.fillRect(0,0,W,H);
+      captureFlash=Math.max(0,captureFlash-0.055);
+    }
+    return;
+  }
+
+  /* ══ PUZZLE ══ */
+  // Live feed always plays in the background
+  ctx.drawImage(mirrorCanvas, 0, 0, W, H);
+
+  // ghost targets (dashed outlines showing where pieces belong)
+  pieces.forEach(p => {
+    if (!p.placed) {
+      ctx.save();
+      ctx.setLineDash([6,6]);
+      ctx.strokeStyle='rgba(255,255,255,0.35)'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.roundRect(homeX(p)+2, homeY(p)+2, pw()-4, ph()-4, 6);
+      ctx.stroke(); ctx.setLineDash([]);
+      ctx.restore();
+    }
+  });
+
+  const sorted = [...pieces].sort((a,b)=>a.z-b.z);
+  sorted.forEach(p => { if(p!==grabbed) drawPiece(p,false); });
+  if (grabbed) drawPiece(grabbed,true);
+
+  drawHand();
+  tickConfetti();
+
+  // badge
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,0.88)';
+  ctx.beginPath(); ctx.roundRect(12,12,130,30,99); ctx.fill();
+  ctx.font='bold 12px Nunito, sans-serif'; ctx.fillStyle=P.roseDark;
+  ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.fillText('📸 Photo Mode', 24, 27);
+  ctx.restore();
+
+  // WIN overlay on canvas
+  if (won) {
+    ctx.save();
+    ctx.fillStyle='rgba(253,244,238,0.7)';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='rgba(255,255,255,0.92)';
+    ctx.beginPath(); ctx.roundRect(W/2-160,H/2-54,320,108,20); ctx.fill();
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font='bold 32px Nunito, sans-serif'; ctx.fillStyle=P.text;
+    ctx.fillText('🎉  Puzzle Solved!', W/2, H/2-12);
+    ctx.font='15px Nunito, sans-serif'; ctx.fillStyle=P.textSoft;
+    ctx.fillText('You did it! ✨', W/2, H/2+22);
+    ctx.restore();
+  }
+}
+
+/* ─── MEDIAPIPE ─── */
+const hands = new Hands({
+  locateFile: f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${f}`
+});
+hands.setOptions({ maxNumHands:1, modelComplexity:1, minDetectionConfidence:0.65, minTrackingConfidence:0.5 });
+
+hands.onResults(results => {
+  if (!ready) return;
+  if (STATE==='preview') { render(); return; }
+
+  if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+    lms = results.multiHandLandmarks[0];
+    const tx=lx(lms[4].x), ty=ly(lms[4].y);
+    const ix=lx(lms[8].x), iy=ly(lms[8].y);
+    const dist=Math.hypot(tx-ix,ty-iy);
+    const mx=(tx+ix)/2, my=(ty+iy)/2;
+    pinchPt={x:mx,y:my};
+    const wasPinching=isPinching;
+    isPinching=dist<44;
+
+    if (STATE==='viewfinder') {
+      if (isPeaceSign(lms)) {
+        if (!captureHoldStart) captureHoldStart=performance.now();
+        captureProgress=Math.min(1,(performance.now()-captureHoldStart)/CAPTURE_HOLD_MS);
+        if (captureProgress>=1) takeSnapshot();
+      } else { captureHoldStart=null; captureProgress=0; }
+    }
+
+    if (STATE==='puzzle' && !won) {
+      if (isPinching && !wasPinching) {
+        const _pw=pw(),_ph=ph();
+        const s=[...pieces].sort((a,b)=>b.z-a.z);
+        for (const p of s) {
+          if(!p.placed&&mx>=p.x&&mx<=p.x+_pw&&my>=p.y&&my<=p.y+_ph) {
+            grabbed=p; grabOff={x:mx-p.x,y:my-p.y};
+            p.z=Math.max(...pieces.map(q=>q.z))+1; break;
+          }
+        }
+      } else if (isPinching && grabbed) {
+        const _pw=pw(),_ph=ph();
+        grabbed.x=Math.max(0,Math.min(W-_pw,mx-grabOff.x));
+        grabbed.y=Math.max(0,Math.min(H-_ph,my-grabOff.y));
+      } else if (!isPinching && wasPinching) {
+        if(grabbed){trySnap(grabbed);grabbed=null;}
+      }
+    }
+  } else {
+    lms=null; pinchPt=null; isPinching=false;
+    captureHoldStart=null; captureProgress=0;
+    if(grabbed){trySnap(grabbed);grabbed=null;}
+  }
+  render();
+});
+
+/* ─── START ─── */
+async function start() {
+  try {
+    overlayMsg.textContent='Requesting camera…';
+    const stream=await navigator.mediaDevices.getUserMedia({video:{width:W,height:H,facingMode:'user'},audio:false});
+    video.srcObject=stream; await video.play();
+    overlay.classList.add('gone');
+    setTimeout(()=>overlay.style.display='none',600);
+    ready=true; updateStats();
+    const cam=new Camera(video,{onFrame:async()=>{await hands.send({image:video});},width:W,height:H});
+    cam.start();
+  } catch(err) {
+    overlayMsg.innerHTML=`<span style="color:#e8789e">⚠ Camera error</span><br><small style="opacity:.6">${err.message}</small>`;
+  }
+}
+start();
+</script>
+</body>
+</html>
